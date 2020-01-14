@@ -1,132 +1,61 @@
-[![Maintained by Gruntwork.io](https://img.shields.io/badge/maintained%20by-gruntwork.io-%235849a6.svg)](https://gruntwork.io/?ref=repo_google_gke)
-[![GitHub tag (latest SemVer)](https://img.shields.io/github/tag/gruntwork-io/terraform-google-gke.svg?label=latest)](https://github.com/gruntwork-io/terraform-google-gke/releases/latest)
-![Terraform Version](https://img.shields.io/badge/tf-%3E%3D0.12.0-blue.svg)
+# GKE Public Cluster
 
-# Google Kubernetes Engine (GKE) Module
+This example creates a Public GKE Cluster.
 
-This repo contains a [Terraform](https://www.terraform.io) module for running a Kubernetes cluster on [Google Cloud Platform (GCP)](https://cloud.google.com/)
-using [Google Kubernetes Engine (GKE)](https://cloud.google.com/kubernetes-engine/).
+With this example, you can create either a regional or zonal cluster. Generally, using a regional cluster is recommended
+over a zonal cluster.
 
-## Quickstart
+Zonal clusters have nodes in a single zones, and will have an outage if that zone has an outage. Regional GKE Clusters
+are high-availability clusters where the cluster master is spread across multiple GCP zones. During a zonal outage, the
+Kubernetes control plane and a subset of your nodes will still be available, provided that at least 1 zone that your
+cluster is running in is still available. Regional control planes remain accessible during upgrades versus zonal control
+planes which do not.
 
-If you want to quickly spin up a GKE Private Cluster with Tiller, you can run the example that is in the root of this
-repo. Check out the [gke-private-tiller example documentation](https://github.com/gruntwork-io/terraform-google-gke/blob/master/examples/gke-private-tiller)
-for instructions.
+By default, regional clusters will create nodes across 3 zones in a region. If you're interested in how nodes are
+distributed in regional clusters, read the GCP docs about [balancing across zones](https://cloud.google.com/kubernetes-engine/docs/concepts/cluster-autoscaler#balancing_across_zones).
 
-## What's in this repo
+The example follows best-practices and runs nodes using a custom service account to follow the principle of
+least privilege. However you will need to ensure that the Identity and Access Management (IAM) API has been
+enabled for the given project. This can be enabled in the Google API Console:
+https://console.developers.google.com/apis/api/iam.googleapis.com/overview. See "Why use Custom Service
+Accounts?" for more information.
 
-This repo has the following folder structure:
+**Important:** Nodes in a public cluster are accessible from the public internet; try using a private cluster such as in
+[`gke-private-cluster`](../gke-private-cluster) to limit access to/from your nodes. Private clusters are recommended for
+running most apps and services.
 
-* [root](https://github.com/gruntwork-io/terraform-google-gke/tree/master): The root folder contains an example of how
-  to deploy a GKE Private Cluster with Tiller. See [gke-private-tiller](https://github.com/gruntwork-io/terraform-google-gke/blob/master/examples/gke-private-tiller)
-  for the documentation.
+## Why use Custom Service Accounts?
 
-* [modules](https://github.com/gruntwork-io/terraform-google-gke/tree/master/modules): This folder contains the
-  main implementation code for this Module, broken down into multiple standalone submodules.
+Each node in a GKE cluster is a Compute Engine instance. Therefore, applications running on a GKE cluster
+inherit the scopes of the Compute Engine instances to which they are deployed.
 
-  The primary module is:
+The recommended way to authenticate to GCP services from applications running on GKE is to create
+your own service accounts. Ideally you must create a new service account for each application/service that makes requests to
+Cloud Platform APIs.
 
-    * [gke-cluster](https://github.com/gruntwork-io/terraform-google-gke/tree/master/modules/gke-cluster): The GKE Cluster module is used to
-    administer the [cluster master](https://cloud.google.com/kubernetes-engine/docs/concepts/cluster-architecture)
-    for a [GKE Cluster](https://cloud.google.com/kubernetes-engine/docs/how-to/cluster-admin-overview).
+GCP automatically creates a default service account, the "Compute Engine default service account" that GKE
+associates it with the nodes it creates by default. Depending on how your project is configured, the default service account comes
+pre-configured with project-wide permissions meaning that any given node will have access to every service every other
+node has. Updating the default service account's permissions or assigning more access scopes to compute instances is
+not the recommended way to authenticate to other Cloud Platform services from Pods running on GKE. In general, we
+recommend using a per-node pool or per-cluster custom service account to allow you to more granularly restrict those
+permissions.
 
-    There are also several supporting modules that add extra functionality on top of `gke-cluster`:
+## Limitations
 
-    * [gke-service-account](https://github.com/gruntwork-io/terraform-google-gke/tree/master/modules/gke-service-account):
-    Used to configure a GCP service account for use with a GKE cluster.
+When using a regional cluster, no region shares GPU types across all of their zones; you will need to explicitly specify
+the zones your cluster's node pools run in in order to use GPUs.
 
-* [examples](https://github.com/gruntwork-io/terraform-google-gke/tree/master/examples): This folder contains
-  examples of how to use the submodules.
+Node Pools cannot be created in zones without a master cluster; you can update the zones of your cluster master provided
+your new zones are within the region your cluster is present in.
 
-* [test](https://github.com/gruntwork-io/terraform-google-gke/tree/master/test): Automated tests for the submodules
-  and examples.
+## How do you run these examples?
 
-## What is Kubernetes?
-
-[Kubernetes](https://kubernetes.io) is an open source container management system for deploying, scaling, and managing
-containerized applications. Kubernetes is built by Google based on their internal proprietary container management
-systems (Borg and Omega). Kubernetes provides a cloud agnostic platform to deploy your containerized applications with
-built in support for common operational tasks such as replication, autoscaling, self-healing, and rolling deployments.
-
-You can learn more about Kubernetes from [the official documentation](https://kubernetes.io/docs/tutorials/kubernetes-basics/).
-
-## What is GKE?
-
-Google Kubernetes Engine or "GKE" is a Google-managed Kubernetes environment. GKE is a fully managed experience; it
-handles the management/upgrading of the Kubernetes cluster master as well as autoscaling of "nodes" through "node pool"
-templates.
-
-Through GKE, your Kubernetes deployments will have first-class support for GCP IAM identities, built-in configuration of
-high-availability and secured clusters, as well as native access to GCP's networking features such as load balancers.
-
-## <a name="how-to-run-applications"></a>How do you run applications on Kubernetes?
-
-There are three different ways you can schedule your application on a Kubernetes cluster. In all three, your application
-Docker containers are packaged as a [Pod](https://kubernetes.io/docs/concepts/workloads/pods/pod/), which are the
-smallest deployable unit in Kubernetes, and represent one or more Docker containers that are tightly coupled. Containers
-in a Pod share certain elements of the kernel space that are traditionally isolated between containers, such as the
-network space (the containers both share an IP and thus the available ports are shared), IPC namespace, and PIDs in some
-cases.
-
-Pods are considered to be relatively ephemeral disposable entities in the Kubernetes ecosystem. This is because Pods are
-designed to be mobile across the cluster so that you can design a scalable fault tolerant system. As such, Pods are
-generally scheduled with
-[Controllers](https://kubernetes.io/docs/concepts/workloads/pods/pod-overview/#pods-and-controllers) that manage the
-lifecycle of a Pod. Using Controllers, you can schedule your Pods as:
-
-- Jobs, which are Pods with a controller that will guarantee the Pods run to completion.
-- Deployments behind a Service, which are Pods with a controller that implement lifecycle rules to provide replication
-  and self-healing capabilities. Deployments will automatically reprovision failed Pods, or migrate Pods to healthy
-  nodes off of failed nodes. A Service constructs a consistent endpoint that can be used to access the Deployment.
-- Daemon Sets, which are Pods that are scheduled on all worker nodes. Daemon Sets schedule exactly one instance of a Pod
-  on each node. Like Deployments, Daemon Sets will reprovision failed Pods and schedule new ones automatically on
-  new nodes that join the cluster.
-
-<!-- TODO: ## What parts of the Production Grade Infrastructure Checklist are covered by this Module? -->
-
-## What's a Module?
-
-A Module is a canonical, reusable, best-practices definition for how to run a single piece of infrastructure, such
-as a database or server cluster. Each Module is written using a combination of [Terraform](https://www.terraform.io/)
-and scripts (mostly bash) and include automated tests, documentation, and examples. It is maintained both by the open
-source community and companies that provide commercial support.
-
-Instead of figuring out the details of how to run a piece of infrastructure from scratch, you can reuse
-existing code that has been proven in production. And instead of maintaining all that infrastructure code yourself,
-you can leverage the work of the Module community to pick up infrastructure improvements through
-a version number bump.
-
-## Who maintains this Module?
-
-This Module and its Submodules are maintained by [Gruntwork](http://www.gruntwork.io/). If you are looking for help or
-commercial support, send an email to
-[support@gruntwork.io](mailto:support@gruntwork.io?Subject=GKE%20Module).
-
-Gruntwork can help with:
-
-* Setup, customization, and support for this Module.
-* Modules and submodules for other types of infrastructure, such as VPCs, Docker clusters, databases, and continuous
-  integration.
-* Modules and Submodules that meet compliance requirements, such as HIPAA.
-* Consulting & Training on AWS, Terraform, and DevOps.
-
-## How do I contribute to this Module?
-
-Contributions are very welcome! Check out the [Contribution Guidelines](https://github.com/gruntwork-io/terraform-google-gke/blob/master/CONTRIBUTING.md)
-for instructions.
-
-## How is this Module versioned?
-
-This Module follows the principles of [Semantic Versioning](http://semver.org/). You can find each new release, along
-with the changelog, in the [Releases Page](https://github.com/gruntwork-io/terraform-google-gke/releases).
-
-During initial development, the major version will be 0 (e.g., `0.x.y`), which indicates the code does not yet have a
-stable API. Once we hit `1.0.0`, we will make every effort to maintain a backwards compatible API and use the MAJOR,
-MINOR, and PATCH versions on each release to indicate any incompatibilities.
-
-## License
-
-Please see [LICENSE](https://github.com/gruntwork-io/terraform-google-gke/blob/master/LICENSE) for how the code in this
-repo is licensed.
-
-Copyright &copy; 2019 Gruntwork, Inc.
+1. Install [Terraform](https://learn.hashicorp.com/terraform/getting-started/install.html) v0.12.0 or later.
+1. Open `variables.tf`, and fill in any required variables that don't have a default.
+1. Run `terraform get`.
+1. Run `terraform plan`.
+1. If the plan looks good, run `terraform apply`.
+1. To setup `kubectl` to access the deployed cluster, run `gcloud beta container clusters get-credentials $CLUSTER_NAME 
+--region $REGION --project $PROJECT`, where `CLUSTER_NAME`, `REGION` and `PROJECT` correspond to what you set for the 
+input variables.
