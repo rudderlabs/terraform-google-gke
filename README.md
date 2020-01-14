@@ -28,7 +28,7 @@ Please go through `variables.tf` for other config variables.
 ## How do you run?
 
 1. Install [Terraform](https://learn.hashicorp.com/terraform/getting-started/install.html) v0.12.0 or later.
-1. Open `variables.tf`, and fill in any required variables that don't have a default.
+1. Open `variables.tf`, and fill in any required variables that don't have a default. Checkout the default variables `rudder_node_type` and `rudder_disk_size_gb` for configuring the nodes.
 1. Run `terraform get`.
 1. Run `terraform plan`.
 1. If the plan looks good, run `terraform apply`.
