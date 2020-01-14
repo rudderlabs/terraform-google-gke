@@ -32,9 +32,9 @@ Please go through `variables.tf` for other config variables.
 1. Run `terraform get`.
 1. Run `terraform plan`.
 1. If the plan looks good, run `terraform apply`.
-1. To setup `kubectl` to access the deployed cluster, run `gcloud beta container clusters get-credentials $CLUSTER_NAME 
---region $REGION --project $PROJECT`, where `CLUSTER_NAME`, `REGION` and `PROJECT` correspond to what you set for the 
+1. To setup `kubectl` to access the deployed cluster, run `gcloud container clusters get-credentials rudder-cluster --zone ${REGION_ZONE} --project ${PROJECT}`, where `REGION_ZONE` (either specify REGION if you created regional cluster or specify ZONE) and `PROJECT` correspond to what you set for the 
 input variables.
+1. Make a copy of the output variables `cluster_endpoint` and `cluster_ca_certificate`
 
 ## Access for Managed Hosting
 For managed hosting, Rudder would need to access your GKE cluster. Please follow the steps and share the generated cert with us.
@@ -52,11 +52,11 @@ kubectl certificate approve rudder-csr
 kubectl get csr rudder-csr -o jsonpath='{.status.certificate}' | base64 --decode > rudder-k8s.crt
 ```
 
-## Install Rudder
-
-Please go through the instructions in the following repository to deploy Rudder into your GKE cluster.
-
-https://github.com/rudderlabs/rudderstack-helm
+## Outputs to share
+Please share the following to enable Rudder managed hosting
+1. `cluster_endpoint`
+1. `cluster_ca_certificate`
+1. `rudder-k8s.crt`
 
 ## Credits
 For best practices of provisioning the cluster, please follow Gruntwork's [recommendations](https://github.com/gruntwork-io/terraform-google-gke)
