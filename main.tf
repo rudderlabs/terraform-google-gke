@@ -34,7 +34,7 @@ module "gke_cluster" {
   # When using these modules in your own templates, you will need to use a Git URL with a ref attribute that pins you
   # to a specific version of the modules, such as the following example:
   # source = "github.com/gruntwork-io/terraform-google-gke.git//modules/gke-cluster?ref=v0.2.0"
-  source = "../../modules/gke-cluster"
+  source = "./modules/gke-cluster"
 
   name = var.cluster_name
 
@@ -64,7 +64,7 @@ resource "google_container_node_pool" "node_pool" {
   location = var.location
   cluster  = module.gke_cluster.name
 
-  initial_node_count = "1"
+  initial_node_count = "3"
 
   autoscaling {
     min_node_count = "1"
@@ -78,7 +78,7 @@ resource "google_container_node_pool" "node_pool" {
 
   node_config {
     image_type   = "COS"
-    machine_type = "n1-standard-1"
+    machine_type = var.rudder_node_type
 
     labels = {
       all-pools-example = "true"
@@ -91,7 +91,7 @@ resource "google_container_node_pool" "node_pool" {
       "public-pool-example",
     ]
 
-    disk_size_gb = "30"
+    disk_size_gb = var.rudder_disk_size_gb
     disk_type    = "pd-standard"
     preemptible  = false
 
@@ -121,7 +121,7 @@ module "gke_service_account" {
   # When using these modules in your own templates, you will need to use a Git URL with a ref attribute that pins you
   # to a specific version of the modules, such as the following example:
   # source = "github.com/gruntwork-io/terraform-google-gke.git//modules/gke-service-account?ref=v0.2.0"
-  source = "../../modules/gke-service-account"
+  source = "./modules/gke-service-account"
 
   name        = var.cluster_service_account_name
   project     = var.project

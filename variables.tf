@@ -38,7 +38,7 @@ variable "cluster_service_account_name" {
 variable "cluster_service_account_description" {
   description = "A description of the custom service account used for the GKE cluster."
   type        = string
-  default     = "Example GKE Cluster Service Account managed by Terraform"
+  default     = "Rudder GKE Cluster Service Account managed by Terraform"
 }
 
 # For the example, we recommend a /16 network for the VPC. Note that when changing the size of the network,
@@ -66,4 +66,16 @@ variable "override_default_node_pool_service_account" {
   description = "When true, this will use the service account that is created for use with the default node pool that comes with all GKE clusters"
   type        = bool
   default     = true
+}
+
+variable "rudder_node_type" {
+  description = "Google compute engine instance type for worker nodes"
+  type        = string
+  default     = "n1-standard-2"
+}
+
+variable "rudder_disk_size_gb" {
+  description = "Default disk size on each worker node. Used for logs and temporary storage."
+  type        = string
+  default     = "30"
 }
