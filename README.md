@@ -23,10 +23,18 @@ Dedicated IAM service account for granular access control
 input variables.
 
 ## Generating rudder certificates for access
-1. kubectl apply -f rudder-user.yaml
-1. kubectl certificate approve rudder-csr
-1. kubectl get csr rudder-csr -o jsonpath='{.status.certificate}' \
-  | base64 --decode > rudder-k8s.crt
+1. Generate a kubernetes resource for rudder user and create a certificate signing request
+```shell
+kubectl apply -f rudder-user.yaml
+```
+2. Approve certificate request
+```
+kubectl certificate approve rudder-csr
+```
+3. Generate a certificate file and share with us for managed hosting.
+```
+kubectl get csr rudder-csr -o jsonpath='{.status.certificate}' | base64 --decode > rudder-k8s.crt
+```
 
 
 
