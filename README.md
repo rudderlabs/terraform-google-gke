@@ -58,5 +58,15 @@ Please share the following to enable Rudder managed hosting
 1. `cluster_ca_certificate`
 1. `rudder-k8s.crt`
 
+## FAQ
+* 
+   ```
+    Error: google: could not find default credentials. See https://developers.google.com/accounts/docs/application-default-credentials for more information.
+   ```
+  Run into the below command if you run into the above error while provisioning through terraform
+  ```
+   gcloud auth application-default login
+  ```
+
 ## Credits
 For best practices of provisioning the cluster, please follow Gruntwork's [recommendations](https://github.com/gruntwork-io/terraform-google-gke)
